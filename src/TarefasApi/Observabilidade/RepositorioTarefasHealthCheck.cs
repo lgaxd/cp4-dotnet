@@ -3,21 +3,17 @@ using TarefasApi.Repositories;
 
 namespace TarefasApi.Observabilidade;
 
-/// <summary>
-/// Health Check customizado (nativo do .NET) que verifica se o repositório
-/// em memória está acessível e responde.
-/// </summary>
 public class RepositorioTarefasHealthCheck : IHealthCheck
 {
-    private readonly ITarefasRepository _repository;
-    private readonly ILogger<RepositorioTarefasHealthCheck> _logger;
+    private readonly ITarefasRepository _repositorio;
+    private readonly ILogger<RepositorioTarefasHealthCheck> _registro;
 
     public RepositorioTarefasHealthCheck(
-        ITarefasRepository repository,
-        ILogger<RepositorioTarefasHealthCheck> logger)
+        ITarefasRepository repositorio,
+        ILogger<RepositorioTarefasHealthCheck> registro)
     {
-        _repository = repository;
-        _logger = logger;
+        _repositorio = repositorio;
+        _registro = registro;
     }
 
     public Task<HealthCheckResult> CheckHealthAsync(
@@ -26,7 +22,7 @@ public class RepositorioTarefasHealthCheck : IHealthCheck
     {
         try
         {
-            var total = _repository.Contar();
+            var total = _repositorio.Contar();
 
             var dados = new Dictionary<string, object>
             {
@@ -34,14 +30,14 @@ public class RepositorioTarefasHealthCheck : IHealthCheck
                 ["verificadoEm"] = DateTime.UtcNow
             };
 
-            _logger.LogDebug("Health check do repositório executado. {TotalTarefas}", total);
+            _registro.LogDebug("Health check do repositório executado. {TotalTarefas}", total);
 
             return Task.FromResult(HealthCheckResult.Healthy(
                 "Repositório em memória acessível.", dados));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Health check do repositório falhou. {Verificacao}", nameof(RepositorioTarefasHealthCheck));
+            _registro.LogError(ex, "Health check do repositório falhou. {Verificacao}", nameof(RepositorioTarefasHealthCheck));
             return Task.FromResult(HealthCheckResult.Unhealthy("Repositório em memória indisponível.", ex));
         }
     }

@@ -3,20 +3,15 @@ using TarefasApi.Observabilidade;
 
 namespace TarefasApi.Middlewares;
 
-/// <summary>
-/// Middleware customizado de observabilidade: cronometra CADA requisição HTTP,
-/// incrementa o contador de requisições e emite um log estruturado com o
-/// tempo de resposta. Atende ao item "Tracing e Métricas" do enunciado.
-/// </summary>
 public class MetricasRequisicoesMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<MetricasRequisicoesMiddleware> _logger;
+    private readonly ILogger<MetricasRequisicoesMiddleware> _registro;
 
-    public MetricasRequisicoesMiddleware(RequestDelegate next, ILogger<MetricasRequisicoesMiddleware> logger)
+    public MetricasRequisicoesMiddleware(RequestDelegate next, ILogger<MetricasRequisicoesMiddleware> registro)
     {
         _next = next;
-        _logger = logger;
+        _registro = registro;
     }
 
     public async Task InvokeAsync(HttpContext context, MetricasTarefas metricas)
@@ -43,8 +38,7 @@ public class MetricasRequisicoesMiddleware
                 context.Response.StatusCode,
                 duracaoMs);
 
-            // Log estruturado com parâmetros nomeados (nunca concatenação).
-            _logger.LogInformation(
+            _registro.LogInformation(
                 "Requisição finalizada. {HttpMethod} {RequestPath} {QueryString} {StatusCode} {DuracaoMs} {CorrelationId} {Rota}",
                 context.Request.Method,
                 context.Request.Path.Value,
@@ -69,7 +63,6 @@ public class MetricasRequisicoesMiddleware
     }
 }
 
-/// <summary>Extensão para registrar o middleware no pipeline.</summary>
 public static class MetricasRequisicoesMiddlewareExtensions
 {
     public static IApplicationBuilder UseMetricasRequisicoes(this IApplicationBuilder app)

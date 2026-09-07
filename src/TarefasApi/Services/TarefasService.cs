@@ -4,23 +4,19 @@ using TarefasApi.Repositories;
 
 namespace TarefasApi.Services;
 
-/// <summary>
-/// Camada de Serviço: concentra as regras de negócio e depende do
-/// <see cref="ITarefasRepository"/> por injeção de dependência (mockável nos testes).
-/// </summary>
 public class TarefasService : ITarefasService
 {
-    private readonly ITarefasRepository _repository;
-    private readonly ILogger<TarefasService> _logger;
+    private readonly ITarefasRepository _repositorio;
+    private readonly ILogger<TarefasService> _registro;
     private readonly MetricasTarefas _metricas;
 
     public TarefasService(
-        ITarefasRepository repository,
-        ILogger<TarefasService> logger,
+        ITarefasRepository repositorio,
+        ILogger<TarefasService> registro,
         MetricasTarefas metricas)
     {
-        _repository = repository;
-        _logger = logger;
+        _repositorio = repositorio;
+        _registro = registro;
         _metricas = metricas;
     }
 
@@ -28,16 +24,14 @@ public class TarefasService : ITarefasService
     {
         if (request is null)
         {
-            // Log estruturado de erro.
-            _logger.LogError("Tentativa de criar tarefa com requisição nula. {Operacao}", nameof(CriarTarefa));
+            _registro.LogError("Tentativa de criar tarefa com requisição nula. {Operacao}", nameof(CriarTarefa));
             _metricas.RegistrarTarefaRejeitada("requisicao_nula");
             throw new ArgumentNullException(nameof(request), "A requisição de criação de tarefa não pode ser nula.");
         }
 
-        // REGRA DE NEGÓCIO 1: título é obrigatório.
         if (string.IsNullOrWhiteSpace(request.Titulo))
         {
-            _logger.LogWarning(
+            _registro.LogWarning(
                 "Falha de validação ao criar tarefa: título não informado. {Operacao} {MotivoRejeicao}",
                 nameof(CriarTarefa), "titulo_obrigatorio");
 
@@ -45,10 +39,9 @@ public class TarefasService : ITarefasService
             throw new ArgumentException("O título da tarefa é obrigatório.", nameof(request));
         }
 
-        // REGRA DE NEGÓCIO 2: prioridade precisa ser um valor válido do enum.
         if (!Enum.IsDefined(typeof(PrioridadeTarefa), request.Prioridade))
         {
-            _logger.LogWarning(
+            _registro.LogWarning(
                 "Falha de validação ao criar tarefa: prioridade inválida. {PrioridadeRecebida} {MotivoRejeicao}",
                 request.Prioridade, "prioridade_invalida");
 
@@ -56,11 +49,10 @@ public class TarefasService : ITarefasService
             throw new ArgumentException("A prioridade informada é inválida.", nameof(request));
         }
 
-        // REGRA DE NEGÓCIO 3: data prevista não pode estar no passado.
         if (request.DataConclusaoPrevista.HasValue &&
             request.DataConclusaoPrevista.Value.Date < DateTime.UtcNow.Date)
         {
-            _logger.LogWarning(
+            _registro.LogWarning(
                 "Falha de validação ao criar tarefa: data prevista no passado. {DataConclusaoPrevista} {MotivoRejeicao}",
                 request.DataConclusaoPrevista, "data_no_passado");
 
@@ -77,10 +69,9 @@ public class TarefasService : ITarefasService
             Concluida = false
         };
 
-        var tarefaCriada = _repository.Adicionar(tarefa);
+        var tarefaCriada = _repositorio.Adicionar(tarefa);
 
-        // LOG ESTRUTURADO exigido pelo enunciado: parâmetros nomeados, sem concatenar string.
-        _logger.LogInformation(
+        _registro.LogInformation(
             "Nova tarefa criada: {NomeTarefa} {TarefaId} {Prioridade} {CriadaEm}",
             tarefaCriada.Titulo, tarefaCriada.Id, tarefaCriada.Prioridade, tarefaCriada.CriadaEm);
 
@@ -93,7 +84,7 @@ public class TarefasService : ITarefasService
     {
         filtro ??= new FiltroTarefasQuery();
 
-        var consulta = _repository.ObterTodas() ?? Enumerable.Empty<Tarefa>();
+        var consulta = _repositorio.ObterTodas() ?? Enumerable.Empty<Tarefa>();
 
         if (filtro.Concluida.HasValue)
         {
@@ -137,7 +128,7 @@ public class TarefasService : ITarefasService
             .Take(tamanho)
             .ToList();
 
-        _logger.LogInformation(
+        _registro.LogInformation(
             "Listagem de tarefas executada. {TotalEncontrado} {QuantidadeRetornada} {Pagina} {TamanhoPagina} {FiltroBusca} {FiltroPrioridade} {FiltroConcluida}",
             materializado.Count, itens.Count, pagina, tamanho,
             filtro.Busca ?? "(nenhum)", filtro.Prioridade, filtro.Concluida);
@@ -153,15 +144,15 @@ public class TarefasService : ITarefasService
 
     public Tarefa? ObterPorId(Guid id)
     {
-        var tarefa = _repository.ObterPorId(id);
+        var tarefa = _repositorio.ObterPorId(id);
 
         if (tarefa is null)
         {
-            _logger.LogWarning("Tarefa não encontrada. {TarefaId}", id);
+            _registro.LogWarning("Tarefa não encontrada. {TarefaId}", id);
         }
         else
         {
-            _logger.LogInformation("Tarefa localizada. {TarefaId} {NomeTarefa}", tarefa.Id, tarefa.Titulo);
+            _registro.LogInformation("Tarefa localizada. {TarefaId} {NomeTarefa}", tarefa.Id, tarefa.Titulo);
         }
 
         return tarefa;

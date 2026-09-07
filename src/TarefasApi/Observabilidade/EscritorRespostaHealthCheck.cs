@@ -3,10 +3,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace TarefasApi.Observabilidade;
 
-/// <summary>
-/// Escreve a resposta do endpoint /health em JSON detalhado
-/// (o status geral continua sendo "Healthy" / "Degraded" / "Unhealthy").
-/// </summary>
 public static class EscritorRespostaHealthCheck
 {
     private static readonly JsonSerializerOptions Opcoes = new() { WriteIndented = true };

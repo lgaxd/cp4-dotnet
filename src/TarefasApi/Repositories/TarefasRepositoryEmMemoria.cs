@@ -3,26 +3,21 @@ using TarefasApi.Models;
 
 namespace TarefasApi.Repositories;
 
-/// <summary>
-/// Implementação em memória do repositório (sem banco de dados real),
-/// registrada como Singleton no container de injeção de dependência.
-/// </summary>
 public class TarefasRepositoryEmMemoria : ITarefasRepository
 {
     private readonly ConcurrentDictionary<Guid, Tarefa> _tarefas = new();
-    private readonly ILogger<TarefasRepositoryEmMemoria> _logger;
+    private readonly ILogger<TarefasRepositoryEmMemoria> _registro;
 
-    public TarefasRepositoryEmMemoria(ILogger<TarefasRepositoryEmMemoria> logger)
+    public TarefasRepositoryEmMemoria(ILogger<TarefasRepositoryEmMemoria> registro)
     {
-        _logger = logger;
+        _registro = registro;
     }
 
     public Tarefa Adicionar(Tarefa tarefa)
     {
         _tarefas[tarefa.Id] = tarefa;
 
-        // Log estruturado: parâmetros nomeados, nunca concatenação de string.
-        _logger.LogDebug(
+        _registro.LogDebug(
             "Tarefa persistida no repositório em memória. {TarefaId} {TotalTarefas}",
             tarefa.Id, _tarefas.Count);
 

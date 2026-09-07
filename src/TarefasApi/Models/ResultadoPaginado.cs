@@ -1,6 +1,5 @@
 ﻿namespace TarefasApi.Models;
 
-/// <summary>Envelope de retorno paginado usado pela camada de serviço.</summary>
 public class ResultadoPaginado<T>
 {
     public IReadOnlyList<T> Itens { get; init; } = Array.Empty<T>();

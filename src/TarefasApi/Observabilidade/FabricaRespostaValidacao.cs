@@ -2,15 +2,6 @@
 
 namespace TarefasApi.Observabilidade;
 
-/// <summary>
-/// Fábrica da resposta 400 Bad Request gerada automaticamente pelo
-/// <c>[ApiController]</c> quando o ModelState é inválido.
-///
-/// O filtro automático do ASP.NET Core roda ANTES do corpo da action, então sem
-/// esta fábrica nenhum log seria emitido para payloads inválidos. Aqui garantimos
-/// que todo erro de validação gere um LOG ESTRUTURADO e incremente a MÉTRICA de
-/// rejeição, mantendo o mesmo corpo de resposta (ValidationProblemDetails).
-/// </summary>
 public static class FabricaRespostaValidacao
 {
     public static IActionResult Criar(ActionContext contexto)
@@ -29,7 +20,6 @@ public static class FabricaRespostaValidacao
             .Where(mensagem => !string.IsNullOrWhiteSpace(mensagem))
             .ToArray();
 
-        // Log estruturado (parâmetros nomeados) do caso de erro.
         logger.LogWarning(
             "Requisição rejeitada na validação do modelo. {HttpMethod} {RequestPath} {QuantidadeErros} {CamposInvalidos} {MensagensErro} {StatusCode}",
             contexto.HttpContext.Request.Method,

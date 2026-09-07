@@ -12,10 +12,6 @@ using TarefasApi.Repositories;
 using TarefasApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// ---------------------------------------------------------------------------
-// 1) LOGGING ESTRUTURADO (ILogger)
-// ---------------------------------------------------------------------------
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(opcoes =>
 {
@@ -24,10 +20,6 @@ builder.Logging.AddSimpleConsole(opcoes =>
     opcoes.TimestampFormat = "[HH:mm:ss] ";
 });
 builder.Logging.AddDebug();
-
-// ---------------------------------------------------------------------------
-// 2) INJEÇÃO DE DEPENDÊNCIA — separação Service / Repository
-// ---------------------------------------------------------------------------
 builder.Services.AddSingleton<ITarefasRepository, TarefasRepositoryEmMemoria>();
 builder.Services.AddScoped<ITarefasService, TarefasService>();
 builder.Services.AddSingleton<MetricasTarefas>();
@@ -36,19 +28,14 @@ builder.Services
     .AddControllers()
     .AddJsonOptions(opcoes =>
     {
-        // Serializa o enum PrioridadeTarefa como texto ("Alta") em vez de número.
         opcoes.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-// Todo 400 automatico do [ApiController] passa a gerar log estruturado + metrica.
 builder.Services.Configure<ApiBehaviorOptions>(opcoes =>
 {
     opcoes.InvalidModelStateResponseFactory = FabricaRespostaValidacao.Criar;
 });
 
-// ---------------------------------------------------------------------------
-// 3) SWAGGER / OPENAPI
-// ---------------------------------------------------------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opcoes =>
 {
@@ -67,9 +54,6 @@ builder.Services.AddSwaggerGen(opcoes =>
     }
 });
 
-// ---------------------------------------------------------------------------
-// 4) HEALTH CHECKS (nativo do .NET)
-// ---------------------------------------------------------------------------
 builder.Services
     .AddHealthChecks()
     .AddCheck<RepositorioTarefasHealthCheck>(
@@ -81,9 +65,6 @@ builder.Services
         check: () => HealthCheckResult.Healthy("API no ar."),
         tags: new[] { "live" });
 
-// ---------------------------------------------------------------------------
-// 5) OPENTELEMETRY — METRICAS E TRACING
-// ---------------------------------------------------------------------------
 var otel = builder.Services
     .AddOpenTelemetry()
     .ConfigureResource(recurso => recurso.AddService(
@@ -92,9 +73,9 @@ var otel = builder.Services
 
 otel.WithMetrics(metricas =>
 {
-    metricas.AddAspNetCoreInstrumentation();       // metricas HTTP nativas do ASP.NET Core
+    metricas.AddAspNetCoreInstrumentation();
     metricas.AddHttpClientInstrumentation();
-    metricas.AddMeter(MetricasTarefas.NomeMeter);  // metricas customizadas da aplicacao
+    metricas.AddMeter(MetricasTarefas.NomeMeter);
 
     if (builder.Environment.IsDevelopment())
     {
@@ -118,11 +99,6 @@ otel.WithTracing(tracing =>
 
 var app = builder.Build();
 
-// ---------------------------------------------------------------------------
-// 6) PIPELINE HTTP
-// ---------------------------------------------------------------------------
-
-// Middleware customizado: mede tempo de resposta e conta as requisicoes.
 app.UseMetricasRequisicoes();
 
 if (app.Environment.IsDevelopment())
@@ -138,30 +114,22 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 app.MapControllers();
 
-// ---------------------------------------------------------------------------
-// 7) ENDPOINTS DE MONITORAMENTO
-// ---------------------------------------------------------------------------
-
-// /health -> status geral ("Healthy") em JSON detalhado.
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     ResponseWriter = EscritorRespostaHealthCheck.EscreverRespostaAsync
 });
 
-// /health/live -> a aplicacao esta de pe? (texto puro: Healthy)
 app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = registro => registro.Tags.Contains("live")
 });
 
-// /health/ready -> as dependencias estao prontas?
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = registro => registro.Tags.Contains("ready"),
     ResponseWriter = EscritorRespostaHealthCheck.EscreverRespostaAsync
 });
 
-// /metrics -> snapshot legivel das metricas coletadas pelo middleware.
 app.MapGet("/metrics", (MetricasTarefas metricas) =>
 {
     var snapshot = new
@@ -183,14 +151,8 @@ app.MapGet("/metrics", (MetricasTarefas metricas) =>
 .WithName("ObterMetricas")
 .WithTags("Monitoramento");
 
-// Raiz -> redireciona para o Swagger em desenvolvimento.
 app.MapGet("/", () => Results.Redirect("/swagger"))
    .ExcludeFromDescription();
 
 app.Run();
-
-/// <summary>
-/// Tornar a classe Program publica e parcial permite que o
-/// WebApplicationFactory&lt;Program&gt; a referencie nos testes de integracao.
-/// </summary>
 public partial class Program { }

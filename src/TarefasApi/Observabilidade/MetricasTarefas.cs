@@ -4,25 +4,17 @@ using TarefasApi.Models;
 
 namespace TarefasApi.Observabilidade;
 
-/// <summary>
-/// Fonte de métricas customizadas da aplicação (System.Diagnostics.Metrics).
-/// Publica os instrumentos no Meter "TarefasApi.Metricas", que é coletado
-/// pelo OpenTelemetry, e mantém um snapshot em memória exposto em GET /metrics.
-/// </summary>
 public class MetricasTarefas : IDisposable
 {
-    /// <summary>Nome do Meter registrado no OpenTelemetry.</summary>
     public const string NomeMeter = "TarefasApi.Metricas";
 
     private readonly Meter _meter;
 
-    // --- Instrumentos OpenTelemetry ---
     private readonly Counter<long> _requisicoesTotal;
     private readonly Counter<long> _tarefasCriadas;
     private readonly Counter<long> _tarefasRejeitadas;
     private readonly Histogram<double> _duracaoRequisicoesMs;
 
-    // --- Snapshot em memória (para o endpoint /metrics) ---
     private long _totalRequisicoes;
     private long _totalTarefasCriadas;
     private long _totalTarefasRejeitadas;
@@ -55,7 +47,6 @@ public class MetricasTarefas : IDisposable
             "tarefas_api.tarefas.rejeitadas", "tarefas",
             "Quantidade de tentativas de criação rejeitadas por regra de negócio.");
 
-        // Gauge observável: tempo médio de resposta calculado sob demanda.
         _meter.CreateObservableGauge(
             "tarefas_api.requisicoes.duracao_media", () => TempoMedioRespostaMs, "ms",
             "Tempo médio de resposta das requisições HTTP.");
@@ -87,7 +78,6 @@ public class MetricasTarefas : IDisposable
     public IReadOnlyDictionary<string, long> RequisicoesPorRota => _porRota;
     public IReadOnlyDictionary<string, long> MotivosDeRejeicao => _motivosRejeicao;
 
-    /// <summary>Registra uma requisição HTTP concluída (chamado pelo middleware).</summary>
     public void RegistrarRequisicao(string metodo, string rota, int statusCode, double duracaoMs)
     {
         Interlocked.Increment(ref _totalRequisicoes);
