@@ -1,0 +1,71 @@
+@TarefasApi_HostAddress = http://localhost:5275
+
+### 1) Health Check completo -> 200 OK com "status": "Healthy"
+GET {{TarefasApi_HostAddress}}/health
+Accept: application/json
+
+### 2) Liveness -> 200 OK com o texto "Healthy"
+GET {{TarefasApi_HostAddress}}/health/live
+
+### 3) Readiness -> 200 OK
+GET {{TarefasApi_HostAddress}}/health/ready
+Accept: application/json
+
+### 4) POST valido -> 201 Created (confira o header Location)
+POST {{TarefasApi_HostAddress}}/api/tarefas
+Content-Type: application/json
+
+{
+  "titulo": "Estudar OpenTelemetry",
+  "descricao": "Rever a aula de metricas",
+  "prioridade": "Alta",
+  "dataConclusaoPrevista": "2026-12-20T00:00:00Z"
+}
+
+### 5) POST valido apenas com o parametro obrigatorio -> 201 Created
+POST {{TarefasApi_HostAddress}}/api/tarefas
+Content-Type: application/json
+
+{
+  "titulo": "Comprar leite"
+}
+
+### 6) POST SEM TITULO -> 400 Bad Request (nunca 500)
+POST {{TarefasApi_HostAddress}}/api/tarefas
+Content-Type: application/json
+
+{
+  "descricao": "Esta tarefa nao tem titulo"
+}
+
+### 7) POST com titulo em branco -> 400 Bad Request
+POST {{TarefasApi_HostAddress}}/api/tarefas
+Content-Type: application/json
+
+{
+  "titulo": "   "
+}
+
+### 8) POST com JSON malformado -> 400 Bad Request (nunca 500)
+POST {{TarefasApi_HostAddress}}/api/tarefas
+Content-Type: application/json
+
+{ isso nao e json }
+
+### 9) GET listagem simples -> 200 OK
+GET {{TarefasApi_HostAddress}}/api/tarefas
+Accept: application/json
+
+### 10) GET com parametros de filtro, ordenacao e paginacao -> 200 OK
+GET {{TarefasApi_HostAddress}}/api/tarefas?prioridade=Alta&busca=estudar&ordenarPor=titulo&ordem=desc&pagina=1&tamanhoPagina=10
+Accept: application/json
+
+### 11) GET com parametro invalido -> 400 Bad Request
+GET {{TarefasApi_HostAddress}}/api/tarefas?pagina=0
+
+### 12) GET por id inexistente -> 404 Not Found
+GET {{TarefasApi_HostAddress}}/api/tarefas/00000000-0000-0000-0000-000000000000
+
+### 13) Snapshot das metricas -> 200 OK
+GET {{TarefasApi_HostAddress}}/metrics
+Accept: application/json
